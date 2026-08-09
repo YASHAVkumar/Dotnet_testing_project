@@ -11,11 +11,11 @@ public class UserService(IUserRepository userRepository)
         return _userRepository.SaveUserDetail(userName, pass);
     }
 
-    public async Task<User> GetUserById(int id)
-    {
-        if (id < 0)
-            return new();
+    //public async Task<User> GetUserById(int id)
+    //{
+    //    if (id <= 0)
+    //        throw new ArgumentException("id cannot be zero or negative", nameof(id));
 
-        return await _userRepository.GetUserByid(id);
-    }
+    //    return await _userRepository.GetUserByid(id);
+    //}
 }

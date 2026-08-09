@@ -14,6 +14,9 @@ namespace testing.web.tests;
 public sealed class ProductsApiFactory : WebApplicationFactory<Program>
 {
     private readonly string _databaseName = $"ProductsApiTests-{Guid.NewGuid()}";
+    private readonly ServiceProvider _inMemoryServiceProvider = new ServiceCollection()
+        .AddEntityFrameworkInMemoryDatabase()
+        .BuildServiceProvider();
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -26,7 +29,8 @@ public sealed class ProductsApiFactory : WebApplicationFactory<Program>
             services.RemoveAll<DbContextOptions<AppDbContext>>();
 
             services.AddDbContext<AppDbContext>(options =>
-                options.UseInMemoryDatabase(_databaseName));
+                options.UseInMemoryDatabase(_databaseName)
+                    .UseInternalServiceProvider(_inMemoryServiceProvider));
 
             using var provider = services.BuildServiceProvider();
             using var scope = provider.CreateScope();
@@ -53,6 +57,16 @@ public sealed class ProductsApiFactory : WebApplicationFactory<Program>
                 });
             context.SaveChanges();
         });
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+
+        if (disposing)
+        {
+            _inMemoryServiceProvider.Dispose();
+        }
     }
 }
 
