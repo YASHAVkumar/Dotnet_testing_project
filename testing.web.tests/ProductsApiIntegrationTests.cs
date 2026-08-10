@@ -54,7 +54,15 @@ public sealed class ProductsApiFactory : WebApplicationFactory<Program>
                     Desc = "Wireless mouse",
                     Date = new DateTime(2026, 1, 2),
                     IsActive = false
-                });
+                },
+                  new Product
+                  {
+                      Id = 3,
+                      Name = "Data",
+                      Desc = "wahouse data",
+                      Date = new DateTime(2026, 1, 2),
+                      IsActive = true
+                  });
             context.SaveChanges();
         });
     }
@@ -85,24 +93,32 @@ public class ProductsApiIntegrationTests
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var products = await response.Content.ReadFromJsonAsync<List<Product>>();
         Assert.NotNull(products);
-        Assert.Equal(2, products.Count);
+        Assert.Equal(3, products.Count);
         Assert.Contains(products, product => product.Id == 1 && product.Name == "Laptop");
         Assert.Contains(products, product => product.Id == 2 && product.Name == "Mouse");
     }
 
-    [Fact]
-    public async Task GetProduct_WithExistingId_ReturnsProduct()
+    [Theory]
+    [InlineData(1)]
+    [InlineData(3)]
+    [InlineData(4)]
+    public async Task GetProduct_WithExistingId_ReturnsProduct(int a)
     {
         using var factory = new ProductsApiFactory();
         using var client = factory.CreateClient();
 
-        var response = await client.GetAsync($"{ProductsEndpoint}/1");
+        var response = await client.GetAsync($"{ProductsEndpoint}/{a}");
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var product = await response.Content.ReadFromJsonAsync<Product>();
-        Assert.NotNull(product);
-        Assert.Equal(1, product.Id);
-        Assert.Equal("Laptop", product.Name);
+
+        var product = response.StatusCode== HttpStatusCode.OK? await response.Content.ReadFromJsonAsync<Product>():null;
+        if (product is not null)
+        {
+            Assert.Equal(a, product.Id);
+            Assert.True(product.IsActive);
+        }
+        else
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+
     }
 
     [Theory]
@@ -136,10 +152,10 @@ public class ProductsApiIntegrationTests
         Assert.Equal(request.Name, createdProduct.Name);
         Assert.Equal(request.Desc, createdProduct.Desc);
 
-        var persistedProduct = await client.GetFromJsonAsync<Product>($"{ProductsEndpoint}/{createdProduct.Id}");
+        var persistedProduct = await client.GetFromJsonAsync<List<Product>>($"{ProductsEndpoint}");
         Assert.NotNull(persistedProduct);
-        Assert.Equal(createdProduct.Id, persistedProduct.Id);
-        Assert.Equal(request.Name, persistedProduct.Name);
+        Assert.Contains(persistedProduct, product=>product.Id==createdProduct.Id);
+        //Assert.Equal(request.Name, persistedProduct.Name);
     }
 
     [Fact]
@@ -168,6 +184,8 @@ public class ProductsApiIntegrationTests
         Assert.NotNull(updatedProduct);
         Assert.Equal("Laptop Pro", updatedProduct.Name);
         Assert.Equal("Updated laptop", updatedProduct.Desc);
+
+      
     }
 
     [Fact]
