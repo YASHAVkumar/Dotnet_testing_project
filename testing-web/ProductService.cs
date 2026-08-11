@@ -12,7 +12,7 @@ public class ProductService(ILogger<ProductService> logger, IProductRepo product
     public async Task<Product?> GetProductAsync(int id)
     {
         if (id <= 0)
-            return null;
+            return new();
 
         try
         {

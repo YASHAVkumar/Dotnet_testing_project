@@ -10,9 +10,17 @@ namespace testing_web
     {
         public async Task<IReadOnlyList<Product>> GetProducts()
         {
-            return await context.Products
+            try
+            {
+              return await context.Products
                 .AsNoTracking()
                 .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error fetching products");
+                throw;
+            }
         }
 
         public async Task<Product?> GetProductById(int id)
