@@ -10,17 +10,21 @@ on:
       - main
 
 jobs:
+
   test:
 
     runs-on: ubuntu-latest
 
+    environment: Development
+
     services:
+
       sqlserver:
         image: mcr.microsoft.com/mssql/server:2022-latest
 
         env:
           ACCEPT_EULA: Y
-          MSSQL_SA_PASSWORD: ${{ secrets.SQL_PASSWORD }}
+          MSSQL_SA_PASSWORD: TestSqlServer@2026#Xunit
 
         ports:
           - 1433:1433
@@ -29,7 +33,7 @@ jobs:
           --health-cmd "/opt/mssql-tools18/bin/sqlcmd
           -S localhost
           -U sa
-          -P '${{ secrets.SQL_PASSWORD }}'
+          -P 'TestSqlServer@2026#Xunit'
           -C
           -Q 'SELECT 1'
           || exit 1"
@@ -54,7 +58,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '10.0.x'
 
 
       # ==========================================
@@ -74,7 +78,7 @@ jobs:
 
 
       # ==========================================
-      # Build ONLY Product Web Tests
+      # Build Product Web Tests
       # ==========================================
 
       - name: Build Product Web Tests
@@ -89,13 +93,6 @@ jobs:
       # ==========================================
 
       - name: Run migrations
-        env:
-          ConnectionStrings__DefaultConnection: >-
-            Server=localhost,1433;
-            Database=TestingProductWebDb_Test;
-            User Id=sa;
-            Password=${{ secrets.SQL_PASSWORD }};
-            TrustServerCertificate=True;
         run: >
           dotnet ef database update
           --project testing-web/testing-web.csproj
@@ -104,7 +101,7 @@ jobs:
 
 
       # ==========================================
-      # Run ONLY Product Web Tests
+      # Run Product Web Tests ONLY
       # ==========================================
 
       - name: Run Product Web Tests
@@ -113,8 +110,9 @@ jobs:
             Server=localhost,1433;
             Database=TestingProductWebDb_Test;
             User Id=sa;
-            Password=${{ secrets.SQL_PASSWORD }};
+            Password=TestSqlServer@2026#Xunit;
             TrustServerCertificate=True;
+
         run: >
           dotnet test
           testing.product.web.tests/testing.product.web.tests.csproj
