@@ -15,9 +15,14 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    # Use the GitHub Development environment
     environment: Development
 
     services:
+
+      # ==========================================
+      # SQL Server
+      # ==========================================
 
       sqlserver:
         image: mcr.microsoft.com/mssql/server:2022-latest
@@ -31,7 +36,7 @@ jobs:
 
         options: >-
           --health-cmd "/opt/mssql-tools18/bin/sqlcmd
-          -S localhost
+          -S localhost,1433
           -U sa
           -P 'TestSqlServer@2026#Xunit'
           -C
@@ -40,6 +45,7 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 30
+
 
     steps:
 
@@ -52,21 +58,41 @@ jobs:
 
 
       # ==========================================
-      # Setup .NET
+      # Setup .NET 10
       # ==========================================
 
-      - name: Setup .NET
+      - name: Setup .NET 10
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
 
 
       # ==========================================
-      # Install EF CLI
+      # Verify .NET
+      # ==========================================
+
+      - name: Verify .NET
+        run: |
+          dotnet --version
+          dotnet --info
+
+
+      # ==========================================
+      # Install EF Core CLI 10
       # ==========================================
 
       - name: Install EF CLI
-        run: dotnet tool install --global dotnet-ef --version 10.*
+        run: |
+          dotnet tool install --global dotnet-ef --version 10.*
+          echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
+
+
+      # ==========================================
+      # Verify EF CLI
+      # ==========================================
+
+      - name: Verify EF CLI
+        run: dotnet ef --version
 
 
       # ==========================================
@@ -78,7 +104,7 @@ jobs:
 
 
       # ==========================================
-      # Build Product Web Tests
+      # Build Product Web Tests ONLY
       # ==========================================
 
       - name: Build Product Web Tests
@@ -97,6 +123,7 @@ jobs:
           dotnet ef database update
           --project testing-web/testing-web.csproj
           --startup-project testing-api/testing-api.csproj
+          --connection "Server=localhost,1433;Database=TestingProductWebDb_Test;User Id=sa;Password=TestSqlServer@2026#Xunit;TrustServerCertificate=True;"
           -- --environment Development
 
 
