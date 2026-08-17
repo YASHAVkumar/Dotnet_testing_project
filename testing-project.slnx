@@ -1,7 +1,0 @@
-<Solution>
-  <Project Path="testing-api/testing-api.csproj" Id="1266d75a-14f7-41ec-b489-756882652f61" />
-  <Project Path="testing-console/testing-console.csproj" />
-  <Project Path="testing-web/testing-web.csproj" />
-  <Project Path="testing.product.web.tests/testing.product.web.tests.csproj" />
-  <Project Path="testing.web.tests/testing.web.tests.csproj" />
-</Solution>
