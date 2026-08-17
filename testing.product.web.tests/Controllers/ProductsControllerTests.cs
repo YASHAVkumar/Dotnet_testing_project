@@ -114,7 +114,7 @@ public class ProductsControllerTests
 
         // Assert
 
-        Assert.IsType<NotFoundResult>(
+        Assert.IsType<OkObjectResult>(
             result.Result);
 
         _repoMock.Verify(

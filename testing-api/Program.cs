@@ -25,11 +25,32 @@ namespace testing_api
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
             builder.Services.AddScoped<ProductService>();
-            builder.Services.AddScoped<IProductRepo,ProductRepo>();
+            // builder.Services.AddScoped<IProductRepo,ProductRepo>();
+            var provider = builder.Configuration["DataAccess:Provider"];
+
+            if (string.Equals(
+                    provider,
+                    "Ef",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                builder.Services.AddScoped<IProductRepo, ProductRepo>();
+            }
+            else if (string.Equals(
+                         provider,
+                         "Sql",
+                         StringComparison.OrdinalIgnoreCase))
+            {
+                builder.Services.AddScoped<IProductRepo, ProductRespositorySqlClient>();
+            }
+            else
+            {
+                throw new InvalidOperationException(
+                    $"Unknown DataAccess provider: {provider}");
+            }
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
+            //if (app.Environment.IsDevelopment())
             {
                 app.MapOpenApi();
                 app.UseSwagger();
@@ -42,7 +63,7 @@ namespace testing_api
 
 
             app.MapControllers();
-
+            app.MapGet("/",()=>"Hello World");
             app.Run();
         }
     }
