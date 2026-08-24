@@ -1,4 +1,6 @@
 
+using Amazon.Extensions.NETCore.Setup;
+using Amazon.S3;
 using Microsoft.EntityFrameworkCore;
 using testing_web;
 
@@ -9,6 +11,26 @@ namespace testing_api
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+            //register aws services 
+            builder.Services.AddDefaultAWSOptions(
+              builder.Configuration.GetAWSOptions());
+
+            builder.Services.AddAWSService<IAmazonS3>();
+            var storageProvider =
+    builder.Configuration["Storage:Provider"];
+
+            if (storageProvider == "S3")
+            {
+                builder.Services.AddScoped<
+                    IImageStorageService,
+                    S3ImageStorageService>();
+            }
+            else
+            {
+                builder.Services.AddScoped<
+                    IImageStorageService,
+                    LocalImageStorageService>();
+            }
 
             // Add services to the container.
 
@@ -61,7 +83,7 @@ namespace testing_api
 
             app.UseAuthorization();
 
-
+            app.UseStaticFiles();
             app.MapControllers();
             app.MapGet("/",()=>"Hello World");
             app.Run();

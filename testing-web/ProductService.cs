@@ -2,7 +2,7 @@ using Microsoft.Extensions.Logging;
 
 namespace testing_web;
 
-public class ProductService(ILogger<ProductService> logger, IProductRepo productRepo)
+public class ProductService(ILogger<ProductService> logger, IProductRepo productRepo, IImageStorageService imageStorage)
 {
     public async Task<IReadOnlyList<Product>> GetProductsAsync()
     {
@@ -12,7 +12,7 @@ public class ProductService(ILogger<ProductService> logger, IProductRepo product
     public async Task<Product?> GetProductAsync(int id)
     {
         if (id <= 0)
-            return new();
+            return null;
 
         try
         {
@@ -44,9 +44,20 @@ public class ProductService(ILogger<ProductService> logger, IProductRepo product
 
     public async Task<bool> DeleteProductAsync(int id)
     {
-        if (id <= 0)
-            return false;
+        var product = await productRepo.GetProductById(id);
 
-        return await productRepo.DeleteProduct(id);
+        if (product == null)
+        {
+            return false;
+        }
+
+        foreach (var image in product.ProductImages)
+        {
+            await imageStorage.DeleteAsync(image.ImageUrl);
+        }
+
+        await productRepo.DeleteProduct(id);
+
+        return true;
     }
 }

@@ -8,6 +8,7 @@ namespace testing_web
     public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
     {
         public DbSet<Product> Products => Set<Product>();
+        public DbSet<ProductImages> ProductImages { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -22,6 +23,14 @@ namespace testing_web
                 entity.Property(u => u.Desc)
                     .IsRequired()
                     .HasMaxLength(500);
+
+                modelBuilder.Entity<ProductImages>()
+                        .HasOne(x => x.Product)
+                        .WithMany(x => x.ProductImages)
+                        .HasForeignKey(x => x.ProductId)
+                        .OnDelete(DeleteBehavior.Cascade);
+
+
             });
         }
     }

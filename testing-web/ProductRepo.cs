@@ -12,9 +12,10 @@ namespace testing_web
         {
             try
             {
-              return await context.Products
-                .AsNoTracking()
-                .ToListAsync();
+                return await context.Products
+                    .Include(x => x.ProductImages)
+                    .AsNoTracking()
+                    .ToListAsync();
             }
             catch (Exception ex)
             {
@@ -28,13 +29,17 @@ namespace testing_web
             try
             {
                 return await context.Products
+                    .Include(x => x.ProductImages)
                     .AsNoTracking()
-                    .FirstOrDefaultAsync(product => product.Id == id);
-
+                    .FirstOrDefaultAsync(x => x.Id == id);
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error fetching product with ID {Id}", id);
+                logger.LogError(
+                    ex,
+                    "Error fetching product with ID {Id}",
+                    id);
+
                 throw;
             }
         }
@@ -62,13 +67,17 @@ namespace testing_web
 
         public async Task<bool> DeleteProduct(int id)
         {
-            var product = await context.Products.FindAsync(id);
+            var product = await context.Products
+                .Include(p => p.ProductImages)
+                .FirstOrDefaultAsync(p => p.Id == id);
+
             if (product == null)
             {
                 return false;
             }
 
             context.Products.Remove(product);
+
             await context.SaveChangesAsync();
 
             return true;
