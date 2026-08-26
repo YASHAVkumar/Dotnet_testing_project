@@ -11,6 +11,19 @@ namespace testing_api
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+            
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("ReactApp", policy =>
+                {
+                    policy
+                        .WithOrigins("http://localhost:5173")
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .AllowCredentials();
+                });
+            });
+            builder.Services.AddSignalR();
             //register aws services 
             builder.Services.AddDefaultAWSOptions(
               builder.Configuration.GetAWSOptions());
@@ -69,6 +82,8 @@ namespace testing_api
                 throw new InvalidOperationException(
                     $"Unknown DataAccess provider: {provider}");
             }
+
+
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
@@ -80,12 +95,13 @@ namespace testing_api
             }
 
             app.UseHttpsRedirection();
-
+            app.UseCors("ReactApp");
             app.UseAuthorization();
 
             app.UseStaticFiles();
             app.MapControllers();
-            app.MapGet("/",()=>"Hello World");
+            app.MapGet("/", () => "Hello World");
+            app.MapHub<ProductHub>("/hubs/products");
             app.Run();
         }
     }

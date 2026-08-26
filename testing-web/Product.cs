@@ -8,13 +8,13 @@ namespace testing_web
 {
     public class Product
     {
-        public int Id { get; set; }=0;
-        public string Name { get; set; }=string.Empty;
+        public int Id { get; set; } = 0;
+        public string Name { get; set; } = string.Empty;
         public DateTime Date { get; set; }
-        public string Desc { get; set; }=string.Empty;
-        public int Price{get;set;}=0;
-        public bool IsActive { get; set; }=false;
-        public ICollection<ProductImages> ProductImages { get; set; }= [];
+        public string Desc { get; set; } = string.Empty;
+        public int Price { get; set; } = 0;
+        public bool IsActive { get; set; } = false;
+        public ICollection<ProductImages> ProductImages { get; set; } = [];
     }
 
     public class ProductImages
@@ -31,6 +31,23 @@ namespace testing_web
 
     public class CreateProductRequest
     {
+        public string Name { get; set; } = string.Empty;
+
+        public DateTime Date { get; set; }
+
+        public string Desc { get; set; } = string.Empty;
+
+        public int Price { get; set; }
+
+        public bool IsActive { get; set; }
+
+        public List<IFormFile> Images { get; set; } = [];
+    }
+
+    public class UpdateProductRequest
+    {
+        public int Id { get; set; }
+
         public string Name { get; set; } = string.Empty;
 
         public DateTime Date { get; set; }

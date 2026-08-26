@@ -54,12 +54,29 @@ namespace testing_web
 
         public async Task<bool> UpdateProduct(Product product)
         {
-            if (!await ProductExists(product.Id))
+            var existingProduct = await context.Products
+                .Include(x => x.ProductImages)
+                .FirstOrDefaultAsync(x => x.Id == product.Id);
+
+            if (existingProduct == null)
             {
                 return false;
             }
 
-            context.Entry(product).State = EntityState.Modified;
+            existingProduct.Name = product.Name;
+            existingProduct.Desc = product.Desc;
+            existingProduct.Price = product.Price;
+
+            // Remove existing image records from DB
+            context.ProductImages.RemoveRange(existingProduct.ProductImages);
+
+            // Add new image records to DB
+            foreach (var image in product.ProductImages)
+            {
+                image.ProductId = product.Id;
+                context.ProductImages.Add(image);
+            }
+
             await context.SaveChangesAsync();
 
             return true;

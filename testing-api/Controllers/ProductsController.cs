@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using testing_web;
 using static System.Net.Mime.MediaTypeNames;
 
@@ -8,7 +9,7 @@ namespace testing_api.Controllers
     [ApiController]
     public class ProductsController(
         ProductService productService,
-        IImageStorageService imageStorage) : ControllerBase
+        IImageStorageService imageStorage,IHubContext<ProductHub> hubContext) : ControllerBase
     {
         // GET: api/Products
         [HttpGet]
@@ -37,12 +38,70 @@ namespace testing_api.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> PutProduct(
             int id,
-            Product product)
+            [FromForm] UpdateProductRequest request)
         {
-            if (id != product.Id)
+            if (id != request.Id)
             {
                 return BadRequest();
             }
+
+            var product =
+                await productService.GetProductAsync(id);
+
+            if (product == null)
+            {
+                return NotFound();
+            }
+
+
+            // Update product details
+
+            product.Name = request.Name;
+            product.Date = request.Date;
+            product.Desc = request.Desc;
+            product.Price = request.Price;
+            product.IsActive = request.IsActive;
+
+
+            // Delete old images
+
+            foreach (var oldImage in product.ProductImages.ToList())
+            {
+                await imageStorage.DeleteAsync(
+                    oldImage.ImageUrl);
+
+                product.ProductImages.Remove(oldImage);
+            }
+
+
+            // Upload new images
+
+            if (request.Images != null &&
+                request.Images.Count > 0)
+            {
+                foreach (var image in request.Images)
+                {
+                    if (image.Length == 0)
+                        continue;
+
+                    await using var stream =
+                        image.OpenReadStream();
+
+                    var imagePath =
+                        await imageStorage.UploadAsync(
+                            stream,
+                            image.FileName,
+                            image.ContentType,
+                            "images");
+
+                    product.ProductImages.Add(
+                        new ProductImages
+                        {
+                            ImageUrl = imagePath
+                        });
+                }
+            }
+
 
             var updated =
                 await productService.UpdateProductAsync(product);
@@ -52,10 +111,21 @@ namespace testing_api.Controllers
                 return NotFound();
             }
 
-            return NoContent();
-        }
 
-        // POST: api/Products
+            // Notify connected clients
+
+            await hubContext.Clients.All.SendAsync(
+                "ProductUpdated",
+                new
+                {
+                    ProductId = product.Id
+                });
+
+
+            return Ok(product);
+        }
+     
+      // POST: api/Products
         [HttpPost]
         public async Task<ActionResult<Product>> PostProduct(
             [FromForm] CreateProductRequest request)
@@ -98,7 +168,13 @@ namespace testing_api.Controllers
             // are saved together
             var createdProduct =
                 await productService.CreateProductAsync(product);
-
+            // Notify connected clients
+            await hubContext.Clients.All.SendAsync(
+                "ProductCreated",
+                new
+                {
+                    ProductId = createdProduct.Id
+                });
             return CreatedAtAction(
                 nameof(GetProduct),
                 new { id = createdProduct.Id },
@@ -109,6 +185,26 @@ namespace testing_api.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProduct(int id)
         {
+            var product =
+                await productService.GetProductAsync(id);
+
+            if (product == null)
+            {
+                return NotFound();
+            }
+
+
+            // Delete images
+
+            foreach (var oldImage in product.ProductImages.ToList())
+            {
+                await imageStorage.DeleteAsync(
+                    oldImage.ImageUrl);
+
+                product.ProductImages.Remove(oldImage);
+            }
+
+
             var deleted =
                 await productService.DeleteProductAsync(id);
 
@@ -117,9 +213,19 @@ namespace testing_api.Controllers
                 return NotFound();
             }
 
+
+            // Notify connected clients
+
+            await hubContext.Clients.All.SendAsync(
+                "ProductDeleted",
+                new
+                {
+                    ProductId = id
+                });
+
+
             return NoContent();
         }
-
         [HttpGet("{productId}/images/view")]
         public async Task<IActionResult> ViewImages(int productId)
         {
